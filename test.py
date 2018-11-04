@@ -21,7 +21,7 @@ def run_inpaint(image='', mask='', output='output.png', checkpoint_dir=''):
     grid = 8
     image = image[:h//grid*grid, :w//grid*grid, :]
     mask = mask[:h//grid*grid, :w//grid*grid, :]
-    print('Shape of image: {}'.format(image.shape))
+    # print('Shape of image: {}'.format(image.shape))
 
     image = np.expand_dims(image, 0)
     mask = np.expand_dims(mask, 0)
@@ -44,9 +44,10 @@ def run_inpaint(image='', mask='', output='output.png', checkpoint_dir=''):
             var_value = tf.contrib.framework.load_variable(checkpoint_dir, from_name)
             assign_ops.append(tf.assign(var, var_value))
         sess.run(assign_ops)
-        print('Model loaded.')
+        # print('Model loaded.')
         result = sess.run(output)
         cv2.imwrite(output_path, result[0][:, :, ::-1])
+        return cv2.cvtColor(result[0][:, :, ::-1], cv2.COLOR_BGR2RGB)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

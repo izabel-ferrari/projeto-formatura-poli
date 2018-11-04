@@ -1,3 +1,6 @@
+import numpy as np
+import cv2
+
 def get_mask_by_type(img, type):
 	# type is white (default) or black
 
@@ -29,7 +32,7 @@ def get_mask_by_type(img, type):
 
 	# Intersect region and edges
 	mask = reg & edges
-	
+
 	return mask
 
 def get_mask(img):
@@ -40,3 +43,12 @@ def get_mask(img):
 	mask = cv2.dilate(mask, kernel)
 
 	return mask
+
+def remove_eyes_from_mask(face_mask, true_eyes):
+    try:
+        for (ex, ey, ew, eh) in true_eyes:
+            for m in face_mask[ey:(ey + eh + 1)]:
+                m[ex:(ex + ew + 1)] = 0
+    except:
+        pass
+    return
