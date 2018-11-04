@@ -1,5 +1,3 @@
-import cv2
-import numpy as np
 def get_mask_by_type(img, type):
 	# type is white (default) or black
 
