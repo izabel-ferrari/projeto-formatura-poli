@@ -8,7 +8,7 @@ import neuralgym as ng
 from inpaint_model import InpaintCAModel
 
 def run_inpaint(image='', mask='', output='output.png', checkpoint_dir=''):
-    ng.get_gpus(1)
+    # ng.get_gpus(1)
 
     model = InpaintCAModel()
     image = cv2.imread(image)
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     parser.add_argument('--checkpoint_dir', default='', type=str,
                         help='The directory of tensorflow checkpoint.')
 
-    ng.get_gpus(1)
+    # ng.get_gpus(1)
     args = parser.parse_args()
 
     model = InpaintCAModel()
