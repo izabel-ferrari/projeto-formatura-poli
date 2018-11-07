@@ -56,10 +56,16 @@ def get_mask(img):
 	return mask
 
 def remove_eyes_from_mask(face_mask, true_eyes):
-    try:
-        for (ex, ey, ew, eh) in true_eyes:
-            for m in face_mask[ey:(ey + eh + 1)]:
-                m[ex:(ex + ew + 1)] = 0
-    except:
-        pass
-    return
+	angle = 0
+	startAngle = 0
+	endAngle = 360
+	color = 0
+	fill = -1
+	try:
+		for (x, y, width, height) in true_eyes:
+			size = (int(width / 2), int(height / 4))
+			center = (int(x + 0.5 * width), int(y + 0.5 * height))
+			cv2.ellipse(face_mask, center, size, angle, startAngle, endAngle, color, fill)
+	except:
+		pass
+	return
