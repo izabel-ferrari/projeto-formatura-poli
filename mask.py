@@ -27,8 +27,6 @@ def get_mask_by_type(img, type):
 
 	# Create edges and dilate to get better results
 	edges = cv2.Canny(gray, 100, 150)
-	edges = cv2.dilate(edges, kernel)
-	edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
 
 	# Intersect region and edges
 	mask = reg & edges
@@ -41,7 +39,20 @@ def get_mask(img):
 	mask = white + black
 	kernel = np.ones((3, 3),np.uint8)
 	mask = cv2.dilate(mask, kernel)
+	areaThreshold = 400
 
+	im2, contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+	for i, contour in enumerate(contours):
+		if(cv2.contourArea(contour) < areaThreshold):
+			leftmost = contour[contour[:,:,0].argmin()][0][0]
+			rightmost = contour[contour[:,:,0].argmax()][0][0]
+			topmost = contour[contour[:,:,1].argmin()][0][1]
+			bottommost = contour[contour[:,:,1].argmax()][0][1]
+
+			topleft = (leftmost, topmost)
+			bottomright = (rightmost, bottommost)
+
+			cv2.rectangle(mask, topleft, bottomright, 255, -1)
 	return mask
 
 def remove_eyes_from_mask(face_mask, true_eyes):
