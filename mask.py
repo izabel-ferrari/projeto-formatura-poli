@@ -1,6 +1,10 @@
 import numpy as np
 import cv2
 
+color_black = 0
+color_white = 255
+fill = -1
+
 def get_mask_by_type(img, type):
 	# type is white (default) or black
 
@@ -9,7 +13,7 @@ def get_mask_by_type(img, type):
 	gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
 	# Define variables used in masking
-	value_range = 80
+	value_range = 70
 	if (type == "black"):
 		min_value = np.amin(gray)
 		max_value = min_value + value_range
@@ -27,45 +31,67 @@ def get_mask_by_type(img, type):
 
 	# Create edges and dilate to get better results
 	edges = cv2.Canny(gray, 100, 150)
+	edges = cv2.dilate(edges, kernel)
+	# edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
 
 	# Intersect region and edges
 	mask = reg & edges
 
 	return mask
 
-def get_mask(img):
-	white = get_mask_by_type(img, "white")
-	black = get_mask_by_type(img, "black")
-	mask = white + black
-	kernel = np.ones((3, 3),np.uint8)
-	mask = cv2.dilate(mask, kernel)
-	areaThreshold = 400
+def transform_contours(mask, operation):
+	maskArea = mask.shape[0]*mask.shape[1]
+	areaThreshold = maskArea*0.005
+	blank = np.zeros(mask.shape, np.uint8)
 
 	im2, contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 	for i, contour in enumerate(contours):
 		if(cv2.contourArea(contour) < areaThreshold):
-			leftmost = contour[contour[:,:,0].argmin()][0][0]
-			rightmost = contour[contour[:,:,0].argmax()][0][0]
-			topmost = contour[contour[:,:,1].argmin()][0][1]
-			bottommost = contour[contour[:,:,1].argmax()][0][1]
+			if(operation == "retangulate"):
+				retangulate_contour(blank,contour)
+			elif(operation == "fill"):
+				fill_contours(blank, contours, i, hierarchy)
+	return blank
 
-			topleft = (leftmost, topmost)
-			bottomright = (rightmost, bottommost)
+def retangulate_contour(img, contour):
+	leftmost = contour[contour[:,:,0].argmin()][0][0]
+	rightmost = contour[contour[:,:,0].argmax()][0][0]
+	topmost = contour[contour[:,:,1].argmin()][0][1]
+	bottommost = contour[contour[:,:,1].argmax()][0][1]
+	topleft = (leftmost, topmost)
+	bottomright = (rightmost, bottommost)
+	cv2.rectangle(img, topleft, bottomright, color_white, fill)
 
-			cv2.rectangle(mask, topleft, bottomright, 255, -1)
+def fill_contours(img, contours, index, hierarchy):
+	lineType = 1
+	maxLevel = 1
+
+	cv2.drawContours(img, contours, index, color_white, fill, lineType, hierarchy, maxLevel)
+
+def get_mask(img):
+	white = get_mask_by_type(img, "white")
+	black = get_mask_by_type(img, "black")
+	mask = white
+	kernel = np.ones((3, 3),np.uint8)
+	mask = cv2.dilate(mask, kernel)
+	mask = mask | transform_contours(mask, "fill")
+
 	return mask
 
 def remove_eyes_from_mask(face_mask, true_eyes):
 	angle = 0
 	startAngle = 0
 	endAngle = 360
-	color = 0
-	fill = -1
 	try:
 		for (x, y, width, height) in true_eyes:
 			size = (int(width / 2), int(height / 4))
 			center = (int(x + 0.5 * width), int(y + 0.5 * height))
-			cv2.ellipse(face_mask, center, size, angle, startAngle, endAngle, color, fill)
+			cv2.ellipse(face_mask, center, size, angle, startAngle, endAngle, color_black, fill)
 	except:
 		pass
-	return
+
+def get_rect_mask(img):
+	mask = get_mask(img)
+	mask = transform_contours(mask, "retangulate")
+
+	return mask
