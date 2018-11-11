@@ -71,7 +71,7 @@ def fill_contours(img, contours, index, hierarchy):
 def get_mask(img):
 	white = get_mask_by_type(img, "white")
 	black = get_mask_by_type(img, "black")
-	mask = white
+	mask = white + black
 	kernel = np.ones((3, 3),np.uint8)
 	mask = cv2.dilate(mask, kernel)
 	mask = mask | transform_contours(mask, "fill")
