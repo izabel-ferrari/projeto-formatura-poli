@@ -90,6 +90,15 @@ def remove_eyes_from_mask(face_mask, true_eyes):
 	except:
 		pass
 
+def remove_face_from_mask(mask, x, y, w, h):
+	mask[y:y+h, x:x+w] = 0
+
+def remove_border_from_mask(mask):
+	mask[0, 0:] = 0
+	mask[-1, 0:] = 0
+	mask[0:, 0] = 0
+	mask[0:, -1] = 0
+
 def get_rect_mask(img):
 	mask = get_mask(img)
 	mask = transform_contours(mask, "retangulate")

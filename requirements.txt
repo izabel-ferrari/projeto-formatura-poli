@@ -8,10 +8,12 @@ html5lib==0.9999999
 kiwisolver==1.0.1
 Markdown==3.0.1
 matplotlib==3.0.2
+memory-profiler==0.54.0
 neuralgym==0.0.1
 numpy==1.15.3
 opencv-python==3.4.3.18
 protobuf==3.6.1
+psutil==5.4.8
 pyparsing==2.3.0
 python-dateutil==2.7.5
 PyYAML==3.13
