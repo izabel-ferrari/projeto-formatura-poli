@@ -1,13 +1,13 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # IMAGEM A SER RESTAURADA
 
 # In[1]:
-import sys
+
 
 # Imagem de entrada
-FULL_IMG_NAME = 'img_'+str(sys.argv[1])+'.jpg'
+FULL_IMG_NAME = 'img_1.jpg'
 
 
 # IMPORTS
@@ -16,9 +16,9 @@ FULL_IMG_NAME = 'img_'+str(sys.argv[1])+'.jpg'
 
 
 import os
-import argparse
 
 import numpy as np
+from matplotlib import pyplot as plt
 import cv2
 
 import test
@@ -39,9 +39,9 @@ INPAINT_DIR_PATH = './inpaints/'
 
 # Verifica se existem os diretórios e cria os que não existem
 if not os.path.exists(INTERM_DIR_PATH):
-	os.mkdir(INTERM_DIR_PATH)
+    os.mkdir(INTERM_DIR_PATH)
 if not os.path.exists(INPAINT_DIR_PATH):
-	os.mkdir(INPAINT_DIR_PATH)
+    os.mkdir(INPAINT_DIR_PATH)
 
 # Define os caminhos para as imagens
 IMG_EXTENSION = FULL_IMG_NAME[-4:]
@@ -67,11 +67,9 @@ CHECKPOINT_DIR_PATH = './model_logs/release_celeba_256/'
 
 
 print('Validando a imagem de entrada...')
-try:
-	image = utils.validate_input_image(IMG_FILEPATH, IMG_EXTENSION)
-	utils.print_done()
-except:
-	raise
+image = utils.validate_input_image(IMG_FILEPATH, IMG_EXTENSION)
+utils.print_done()
+plt.imshow(image)
 
 
 # IDENTIFICAÇÃO DO ROSTO
@@ -81,23 +79,38 @@ except:
 
 print('Identificando o rosto na imagem...')
 try:
-	# Identificação do rosto
-	x, y, w, h = roi.identify_face(image)[0]
-	
-	image_copy = np.copy(image)
-	cv2.rectangle(image_copy, (x,y), (x+w,y+h), (255,0,0), 10)
-	
-	# Corte do rosto
-	image_cropped = image[y:y+h, x:x+w]
-#     cv2.imwrite(CROP_FILEPATH, cv2.cvtColor(image_cropped, cv2.COLOR_BGR2RGB))
-
-	# Redimensionamento do rosto
-	face = utils.resize_face(w, h, image_cropped)
-	cv2.imwrite(FACE_FILEPATH, cv2.cvtColor(face, cv2.COLOR_BGR2RGB))
-	
-	utils.print_done()
+    # Identificação do rosto
+    x, y, w, h = roi.identify_face(image)[0]
+    
 except:
-	raise
+    x = 0
+    y = 0
+    h, w, p = image.shape
+    
+    if w != h:
+        min_size = min(w,h)
+        if w == min_size:
+            y = int(y + (h-w)/2)
+            h = w
+        elif h == min_size:
+            x = int(x + (w-h)/2)
+            w = h
+
+image_copy = np.copy(image)
+cv2.rectangle(image_copy, (x,y), (x+w,y+h), (255,0,0), 10)
+plt.imshow(image_copy)
+
+# Corte do rosto
+image_cropped = image[y:y+h, x:x+w]
+#     cv2.imwrite(CROP_FILEPATH, cv2.cvtColor(image_cropped, cv2.COLOR_BGR2RGB))
+#     plt.imshow(image_cropped)
+
+# Redimensionamento do rosto
+face = utils.resize_face(w, h, image_cropped)
+cv2.imwrite(FACE_FILEPATH, cv2.cvtColor(face, cv2.COLOR_BGR2RGB))
+plt.imshow(face)
+
+utils.print_done()
 
 
 # IDENTIFICAÇÃO DOS OLHOS
@@ -110,8 +123,9 @@ true_eyes = roi.detect_eyes(face)
 
 face_copy = np.copy(face)
 for (ex, ey, ew, eh) in true_eyes:
-	cv2.ellipse(face_copy,(int(ex+0.5*ew), int(ey+0.5*eh)),(int(ew/2),int(eh/4)),0,0,360,(0, 255, 0),2)
+    cv2.ellipse(face_copy,(int(ex+0.5*ew), int(ey+0.5*eh)),(int(ew/2),int(eh/4)),0,0,360,(0, 255, 0),2)
 
+plt.imshow(face_copy)
 utils.print_done()
 
 
@@ -129,6 +143,7 @@ mixed = ~face_rect_mask & face_mask
 
 mask.remove_eyes_from_mask(face_rect_mask, true_eyes)
 cv2.imwrite(MASK_FACE_FILEPATH, face_rect_mask)
+plt.imshow(face_rect_mask, cmap='gray')
 
 utils.print_done()
 
@@ -140,16 +155,8 @@ utils.print_done()
 
 print('Verificando a porcentagem de dano no rosto...')
 
-threshold_dano = 0.01
 sem_dano = sum(sum(face_rect_mask == 0))
-
 porcentagem_dano = 1-sem_dano/utils.FACE_SIZE**2
-
-if porcentagem_dano > threshold_dano:
-	generative_inpaint = True
-else:
-	generative_inpaint = False
-
 print(str(round(porcentagem_dano, 2)*100) + '% de dano no rosto.')
 
 
@@ -158,19 +165,16 @@ print(str(round(porcentagem_dano, 2)*100) + '% de dano no rosto.')
 # In[9]:
 
 
-if generative_inpaint:
-	print('Restaurando o rosto com Generative Inpaint...')
-	face_inpaint = test.run_inpaint(image = FACE_FILEPATH,
-									 mask = MASK_FACE_FILEPATH,
-									 output = INPAINT_FACE_FILEPATH,
-									 checkpoint_dir = CHECKPOINT_DIR_PATH)
-	face_inpaint2 = cv2.inpaint(face, mixed, 3, cv2.INPAINT_TELEA)
-	face_inpaint[mixed==255] = face_inpaint2[mixed==255]
-else:
-	print('Restaurando o rosto com OpenCV Inpaint...')
-	face_inpaint = cv2.inpaint(face, face_mask, 3, cv2.INPAINT_TELEA)
+print('Restaurando o rosto com Generative Inpaint...')
+face_inpaint = test.run_inpaint(image = FACE_FILEPATH,
+                                 mask = MASK_FACE_FILEPATH,
+                                 output = INPAINT_FACE_FILEPATH,
+                                 checkpoint_dir = CHECKPOINT_DIR_PATH)
+face_inpaint2 = cv2.inpaint(face, mixed, 3, cv2.INPAINT_TELEA)
+face_inpaint[mixed==255] = face_inpaint2[mixed==255]
 
 cv2.imwrite(INPAINT_FACE_FILEPATH, cv2.cvtColor(face_inpaint, cv2.COLOR_BGR2RGB))
+plt.imshow(face_inpaint)
 
 # Redimensionando o rosto restaurado para o tamanho original
 face_inpaint_redim = cv2.resize(face_inpaint, (w, h), interpolation = cv2.INTER_AREA)
@@ -186,6 +190,7 @@ utils.print_done()
 print('Restaurando o fundo da imagem...')
 image_mask = mask.get_mask(image)
 # cv2.imwrite(MASK_IMG_FILEPATH, image_mask)
+plt.imshow(image_mask, cmap='gray')
 
 
 # In[11]:
@@ -193,6 +198,7 @@ image_mask = mask.get_mask(image)
 
 image_inpaint = cv2.inpaint(image, image_mask, 3, cv2.INPAINT_TELEA)
 # cv2.imwrite(INPAINT_OPENCV_FILEPATH, cv2.cvtColor(image_inpaint, cv2.COLOR_BGR2RGB))
+plt.imshow(image_inpaint, cmap='gray')
 
 utils.print_done()
 
@@ -205,19 +211,10 @@ utils.print_done()
 print('Reconstruindo a imagem completa...')
 
 image_final = np.copy(image_inpaint)
-image_final[x:x+w, y:y+h] = face_inpaint_redim
-# for i in range(0, w):
-	# for j in range(0, h):
-		# for c in range(0,3):
-			# image_final[y+j][x+i][c] = face_inpaint_redim[j][i][c]
+image_final[y:y+h, x:x+w] = face_inpaint_redim
 
 cv2.imwrite(INPAINT_FINAL_FILEPATH, cv2.cvtColor(image_final, cv2.COLOR_BGR2RGB))
+plt.imshow(image_final)
 
 utils.print_done()
-
-
-# In[ ]:
-
-
-
 
