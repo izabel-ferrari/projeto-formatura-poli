@@ -11,7 +11,7 @@ def validate_input_image(IMG_FILEPATH, IMG_EXTENSION):
 		height, width, channels = image.shape
 
 		# Verifica se a imagem está no formato JPG
-		if IMG_EXTENSION not in ['.JPG', '.jpg']:
+		if IMG_EXTENSION not in ['.JPG', '.jpg', '.JPEG', '.jpeg']:
 			raise TypeError('A imagem de entrada deve estar no formato .jpg, encontrado {}'.format(IMG_EXTENSION))
 
 		# Verifica se a imagem tem tamanho mínimo de 256 x 256
