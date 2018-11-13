@@ -5,4 +5,4 @@ interm_files/
 inpaints/
 images/
 Inpaint.py
-
+tf_logs/
