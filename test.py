@@ -46,6 +46,8 @@ def run_inpaint(image='', mask='', output='output.png', checkpoint_dir=''):
         sess.run(assign_ops)
         # print('Model loaded.')
         result = sess.run(output)
+        writer = tf.summary.FileWriter("tf_logs/")
+        writer.add_graph(sess.graph)
         cv2.imwrite(output_path, result[0][:, :, ::-1])
         return cv2.cvtColor(result[0][:, :, ::-1], cv2.COLOR_BGR2RGB)
 
