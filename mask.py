@@ -20,8 +20,8 @@ def get_mask_by_type(img, type):
 	else:
 		max_value = np.amax(gray)
 		min_value = max_value - value_range
-	min_color = np.array([0, 0, min_value])
-	max_color = np.array([255, 255, max_value])
+	min_color = np.array([color_black, color_black, min_value])
+	max_color = np.array([color_white, color_white, max_value])
 
 	# Create initial region mask
 	reg = cv2.inRange(hsv, min_color, max_color)
@@ -91,13 +91,13 @@ def remove_eyes_from_mask(face_mask, true_eyes):
 		pass
 
 def remove_face_from_mask(mask, x, y, w, h):
-	mask[y:y+h, x:x+w] = 0
+	mask[y:y+h, x:x+w] = color_black
 
 def remove_border_from_mask(mask):
-	mask[0, 0:] = 0
-	mask[-1, 0:] = 0
-	mask[0:, 0] = 0
-	mask[0:, -1] = 0
+	mask[0, 0:] = color_black
+	mask[-1, 0:] = color_black
+	mask[0:, 0] = color_black
+	mask[0:, -1] = color_black
 
 def get_rect_mask(img):
 	mask = get_mask(img)
