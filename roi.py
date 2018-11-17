@@ -30,6 +30,11 @@ def identify_face(image):
                 curr_face = (w**2 + h**2)**0.5
 
         image_faces = best_face
+    grid = 8
+    x, y, w, h = image_faces[0]
+    w = w//grid*grid
+    h = h//grid*grid
+    image_faces[0] = [x, y, w, h]
 
     return image_faces
 
