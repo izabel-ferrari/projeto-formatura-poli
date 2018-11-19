@@ -2,9 +2,6 @@ import cv2
 
 FACE_SIZE = 256
 
-def print_done():
-	print('Pronto.')
-
 def validate_input_image(IMG_FILEPATH, IMG_EXTENSION):
 	try:
 		image = cv2.cvtColor(cv2.imread(IMG_FILEPATH), cv2.COLOR_BGR2RGB)

@@ -6,37 +6,49 @@ eye_cascade = cv2.CascadeClassifier('haarcascades/haarcascade_eye.xml')
 
 def identify_face(image):
     image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    for minNeighbors in range(0, 50, 10):
-        # Itera até encontrar apenas um rosto ou até chegar no limite dos vizinhos
-        image_faces = face_cascade.detectMultiScale(image_gray, 1.05, minNeighbors)
-        if len(image_faces) == 1:
-            break
-
-    if len(image_faces) == 0:
-        # Itera até encontrar apenas dois rostos
+    try:
         for minNeighbors in range(0, 50, 10):
+            # Itera até encontrar apenas um rosto ou até chegar no limite dos vizinhos
             image_faces = face_cascade.detectMultiScale(image_gray, 1.05, minNeighbors)
-            if len(image_faces) == 2:
+            if len(image_faces) == 1:
                 break
 
-    if len(image_faces) > 1:
-        curr_face = 0
-        best_face = [[0, 0, 0, 0]]
+        if len(image_faces) == 0:
+            # Itera até encontrar apenas dois rostos
+            for minNeighbors in range(0, 50, 10):
+                image_faces = face_cascade.detectMultiScale(image_gray, 1.05, minNeighbors)
+                if len(image_faces) == 2:
+                    break
 
-        for (x,y,w,h) in image_faces:
-            if (w**2 + h**2)**0.5 > curr_face:
-                best_face[0] = [x, y, w, h]
-                curr_face = (w**2 + h**2)**0.5
+        if len(image_faces) > 1:
+            curr_face = 0
+            best_face = [[0, 0, 0, 0]]
 
-        image_faces = best_face
-    grid = 8
-    x, y, w, h = image_faces[0]
-    w = w//grid*grid
-    h = h//grid*grid
-    image_faces[0] = [x, y, w, h]
+            for (x,y,w,h) in image_faces:
+                if (w**2 + h**2)**0.5 > curr_face:
+                    best_face[0] = [x, y, w, h]
+                    curr_face = (w**2 + h**2)**0.5
 
-    return image_faces
+            image_faces = best_face
+        grid = 8
+        x, y, w, h = image_faces[0]
+        w = w//grid*grid
+        h = h//grid*grid
+        return [x, y, w, h]
+    except:
+        x = 0
+        y = 0
+        h, w, p = image.shape
+
+        if w != h:
+            min_size = min(w,h)
+            if w == min_size:
+                y = int(y + (h-w)/2)
+                h = w
+            elif h == min_size:
+                x = int(x + (w-h)/2)
+                w = h
+        return [x, y, w, h]
 
 def detect_eyes(face):
     face_gray = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
