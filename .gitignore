@@ -1,8 +1,7 @@
 neuralgym_logs
 __pycache__/*
 .ipynb_checkpoints/*
-interm_files/
-inpaints/
+interm_files/*
 images/
 Inpaint.py
 tf_logs/
