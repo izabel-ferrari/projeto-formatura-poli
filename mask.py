@@ -5,6 +5,22 @@ color_black = 0
 color_white = 255
 fill = -1
 
+def ridge_detect_inpaint(img):
+	scale = .5
+	inv = cv2.bitwise_not(img)
+	ridge_filter = cv2.ximgproc.RidgeDetectionFilter_create(scale = scale)
+	ridges = ridge_filter.getRidgeFilteredImage(inv)
+	ret,thresh = cv2.threshold(ridges,150,255,cv2.THRESH_BINARY)
+	mask = transform_contours(thresh, "fill")
+	mask = thresh | mask
+	inpaint = cv2.inpaint(img, mask, 3, cv2.INPAINT_NS)
+	cv2.imwrite("ridges.jpg",ridges)
+	cv2.imwrite("thresh.jpg",thresh)
+	cv2.imwrite("mask.jpg",mask)
+
+	return inpaint
+
+
 def get_mask_by_type(img, type):
 	# type is white (default) or black
 
@@ -41,7 +57,7 @@ def get_mask_by_type(img, type):
 
 def transform_contours(mask, operation):
 	maskArea = mask.shape[0]*mask.shape[1]
-	areaThreshold = maskArea*0.005
+	areaThreshold = 100
 	blank = np.zeros(mask.shape, np.uint8)
 
 	im2, contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
