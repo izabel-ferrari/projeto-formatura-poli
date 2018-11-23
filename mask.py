@@ -5,20 +5,16 @@ color_black = 0
 color_white = 255
 fill = -1
 
-def ridge_detect_inpaint(img):
+def get_ridge_mask(img):
 	scale = .5
 	inv = cv2.bitwise_not(img)
 	ridge_filter = cv2.ximgproc.RidgeDetectionFilter_create(scale = scale)
 	ridges = ridge_filter.getRidgeFilteredImage(inv)
-	ret,thresh = cv2.threshold(ridges,150,255,cv2.THRESH_BINARY)
-	mask = transform_contours(thresh, "fill")
+	ret,thresh = cv2.threshold(ridges,120,255,cv2.THRESH_BINARY)
+	mask = transform_contours(thresh, "fill", 50)
 	mask = thresh | mask
-	inpaint = cv2.inpaint(img, mask, 3, cv2.INPAINT_NS)
-	cv2.imwrite("ridges.jpg",ridges)
-	cv2.imwrite("thresh.jpg",thresh)
-	cv2.imwrite("mask.jpg",mask)
 
-	return inpaint
+	return mask
 
 
 def get_mask_by_type(img, type):
@@ -55,9 +51,7 @@ def get_mask_by_type(img, type):
 
 	return mask
 
-def transform_contours(mask, operation):
-	maskArea = mask.shape[0]*mask.shape[1]
-	areaThreshold = 100
+def transform_contours(mask, operation, areaThreshold):
 	blank = np.zeros(mask.shape, np.uint8)
 
 	im2, contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -95,8 +89,7 @@ def get_mask(img, damageType = "white"):
 		mask += get_mask_by_type(img, "black")
 	kernel = np.ones((3, 3),np.uint8)
 	mask = cv2.dilate(mask, kernel)
-	mask = mask | transform_contours(mask, "fill")
-
+	mask = mask | transform_contours(mask, "fill", max_image_area(mask))
 	return mask
 
 def remove_eyes_from_mask(face_mask, true_eyes):
@@ -122,6 +115,9 @@ def remove_border_from_mask(mask):
 
 def get_rect_mask(img):
 	mask = get_mask(img)
-	mask = transform_contours(mask, "retangulate")
+	mask = transform_contours(mask, "retangulate", max_image_area(mask))
 
 	return mask
+
+def max_image_area(img):
+	return 0.005*img.shape[0]*img.shape[1]
