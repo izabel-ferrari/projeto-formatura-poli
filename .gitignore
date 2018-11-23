@@ -4,3 +4,4 @@ __pycache__/*
 interm_files/*
 Inpaint.py
 tf_logs/
+diff/
