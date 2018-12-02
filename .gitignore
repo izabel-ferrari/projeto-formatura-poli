@@ -1,7 +1,8 @@
-neuralgym_logs
+neuralgym_logs/*
 __pycache__/*
 .ipynb_checkpoints/*
 interm_files/*
 Inpaint.py
-tf_logs/
-diff/
+tf_logs/*
+diff/*
+metadados/*
