@@ -11,7 +11,7 @@ def get_ridge_mask(img):
 	ridge_filter = cv2.ximgproc.RidgeDetectionFilter_create(scale = scale)
 	ridges = ridge_filter.getRidgeFilteredImage(inv)
 	ret,thresh = cv2.threshold(ridges,120,255,cv2.THRESH_BINARY)
-	mask = transform_contours(thresh, "fill", 50)
+	mask = transform_contours(thresh, "fill", 50, img)
 	mask = thresh | mask
 
 	return mask
@@ -51,7 +51,7 @@ def get_mask_by_type(img, type):
 
 	return mask
 
-def transform_contours(mask, operation, areaThreshold):
+def transform_contours(mask, operation, areaThreshold, img):
 	blank = np.zeros(mask.shape, np.uint8)
 
 	im2, contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -60,7 +60,7 @@ def transform_contours(mask, operation, areaThreshold):
 			if(operation == "retangulate"):
 				retangulate_contour(blank,contour)
 			elif(operation == "fill"):
-				fill_contours(blank, contours, i, hierarchy)
+				fill_contours(blank, contours, i, hierarchy, img)
 	return blank
 
 def retangulate_contour(img, contour):
@@ -72,11 +72,13 @@ def retangulate_contour(img, contour):
 	bottomright = (rightmost, bottommost)
 	cv2.rectangle(img, topleft, bottomright, color_white, fill)
 
-def fill_contours(img, contours, index, hierarchy):
+def fill_contours(img, contours, index, hierarchy, origImage):
 	lineType = 1
 	maxLevel = 1
-
-	cv2.drawContours(img, contours, index, color_white, fill, lineType, hierarchy, maxLevel)
+	region = origImage[contours[index]]
+	mean = cv2.mean(region)[0]
+	if(mean > 170):
+		cv2.drawContours(img, contours, index, color_white, fill, lineType, hierarchy, maxLevel)
 
 def get_mask(img, damageType = "white"):
 	mask = np.zeros(img.shape[:2], np.uint8)
@@ -89,7 +91,7 @@ def get_mask(img, damageType = "white"):
 		mask += get_mask_by_type(img, "black")
 	kernel = np.ones((3, 3),np.uint8)
 	mask = cv2.dilate(mask, kernel)
-	mask = mask | transform_contours(mask, "fill", max_image_area(mask))
+	mask = mask | transform_contours(mask, "fill", max_image_area(mask), img)
 	return mask
 
 def remove_eyes_from_mask(face_mask, true_eyes):
@@ -115,7 +117,7 @@ def remove_border_from_mask(mask):
 
 def get_rect_mask(img):
 	mask = get_mask(img)
-	mask = transform_contours(mask, "retangulate", max_image_area(mask))
+	mask = transform_contours(mask, "retangulate", max_image_area(mask), img)
 
 	return mask
 
