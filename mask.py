@@ -10,8 +10,8 @@ def get_ridge_mask(img):
 	inv = cv2.bitwise_not(img)
 	ridge_filter = cv2.ximgproc.RidgeDetectionFilter_create(scale = scale)
 	ridges = ridge_filter.getRidgeFilteredImage(inv)
-	ret,thresh = cv2.threshold(ridges,120,255,cv2.THRESH_BINARY)
-	mask = transform_contours(thresh, "fill", 50, img)
+	ret,thresh = cv2.threshold(ridges,160,255,cv2.THRESH_BINARY)
+	mask = transform_contours(thresh, "fill", 50, img)[0]
 	mask = thresh | mask
 
 	return mask
@@ -25,7 +25,7 @@ def get_mask_by_type(img, type):
 	gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
 	# Define variables used in masking
-	value_range = 70
+	value_range = 60
 	if (type == "black"):
 		min_value = np.amin(gray)
 		max_value = min_value + value_range
@@ -45,14 +45,17 @@ def get_mask_by_type(img, type):
 	edges = cv2.Canny(gray, 100, 150)
 	edges = cv2.dilate(edges, kernel)
 	# edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
-
 	# Intersect region and edges
 	mask = reg & edges
+	cv2.imwrite("reg.jpg", reg)
+	cv2.imwrite("edges.jpg", edges)
+	cv2.imwrite("mask.jpg", mask)
 
 	return mask
 
 def transform_contours(mask, operation, areaThreshold, img):
 	blank = np.zeros(mask.shape, np.uint8)
+	blank2 = np.copy(mask)
 
 	im2, contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 	for i, contour in enumerate(contours):
@@ -61,7 +64,10 @@ def transform_contours(mask, operation, areaThreshold, img):
 				retangulate_contour(blank,contour)
 			elif(operation == "fill"):
 				fill_contours(blank, contours, i, hierarchy, img)
-	return blank
+		else:
+			fill_contours(blank2, contours, i, hierarchy, img)
+
+	return blank,blank2
 
 def retangulate_contour(img, contour):
 	leftmost = contour[contour[:,:,0].argmin()][0][0]
@@ -75,10 +81,14 @@ def retangulate_contour(img, contour):
 def fill_contours(img, contours, index, hierarchy, origImage):
 	lineType = 1
 	maxLevel = 1
-	region = origImage[contours[index]]
-	mean = cv2.mean(region)[0]
-	if(mean > 170):
-		cv2.drawContours(img, contours, index, color_white, fill, lineType, hierarchy, maxLevel)
+	regions = origImage[contours[index]]
+	for region in regions:
+		hsv = cv2.cvtColor(region[0], cv2.COLOR_BGR2HSV)
+		kernel = np.ones((3,3),np.uint8)
+		hsv = cv2.erode(hsv, kernel)
+		mean = cv2.mean(hsv[:,:,2])[0]
+		if(mean > 120):
+			cv2.drawContours(img, contours, index, color_white, fill, lineType, hierarchy, maxLevel)
 
 def get_mask(img, damageType = "white"):
 	mask = np.zeros(img.shape[:2], np.uint8)
@@ -91,7 +101,7 @@ def get_mask(img, damageType = "white"):
 		mask += get_mask_by_type(img, "black")
 	kernel = np.ones((3, 3),np.uint8)
 	mask = cv2.dilate(mask, kernel)
-	mask = mask | transform_contours(mask, "fill", max_image_area(mask), img)
+	mask = mask | transform_contours(mask, "fill", max_image_area(mask), img)[0]
 	return mask
 
 def remove_eyes_from_mask(face_mask, true_eyes):
@@ -117,9 +127,8 @@ def remove_border_from_mask(mask):
 
 def get_rect_mask(img):
 	mask = get_mask(img)
-	mask = transform_contours(mask, "retangulate", max_image_area(mask), img)
-
-	return mask
+	mask, mixed = transform_contours(mask, "retangulate", max_image_area(mask), img)
+	return mask, mixed
 
 def max_image_area(img):
-	return 0.005*img.shape[0]*img.shape[1]
+	return 0.003*img.shape[0]*img.shape[1]
