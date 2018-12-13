@@ -10,7 +10,8 @@ def get_ridge_mask(img):
 	inv = cv2.bitwise_not(img)
 	ridge_filter = cv2.ximgproc.RidgeDetectionFilter_create(scale = scale)
 	ridges = ridge_filter.getRidgeFilteredImage(inv)
-	ret,thresh = cv2.threshold(ridges,160,255,cv2.THRESH_BINARY)
+	max_value = np.amax(inv) - 130
+	ret,thresh = cv2.threshold(ridges,max_value,255,cv2.THRESH_BINARY)
 	mask = transform_contours(thresh, "fill", 50, img)[0]
 	mask = thresh | mask
 
@@ -44,19 +45,17 @@ def get_mask_by_type(img, type):
 	# Create edges and dilate to get better results
 	edges = cv2.Canny(gray, 100, 150)
 	edges = cv2.dilate(edges, kernel)
-	# edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
+	kernel = np.ones((5,5),np.uint8)
+	edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
 	# Intersect region and edges
 	mask = reg & edges
-	cv2.imwrite("reg.jpg", reg)
-	cv2.imwrite("edges.jpg", edges)
-	cv2.imwrite("mask.jpg", mask)
 
 	return mask
 
 def transform_contours(mask, operation, areaThreshold, img):
 	blank = np.zeros(mask.shape, np.uint8)
 	blank2 = np.copy(mask)
-
+	blank3 = np.copy(blank)
 	im2, contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 	for i, contour in enumerate(contours):
 		if(cv2.contourArea(contour) < areaThreshold):
@@ -66,7 +65,7 @@ def transform_contours(mask, operation, areaThreshold, img):
 				fill_contours(blank, contours, i, hierarchy, img)
 		else:
 			fill_contours(blank2, contours, i, hierarchy, img)
-
+			fill_contours(blank3, contours, i, hierarchy, img)
 	return blank,blank2
 
 def retangulate_contour(img, contour):
@@ -81,14 +80,13 @@ def retangulate_contour(img, contour):
 def fill_contours(img, contours, index, hierarchy, origImage):
 	lineType = 1
 	maxLevel = 1
-	regions = origImage[contours[index]]
-	for region in regions:
-		hsv = cv2.cvtColor(region[0], cv2.COLOR_BGR2HSV)
-		kernel = np.ones((3,3),np.uint8)
-		hsv = cv2.erode(hsv, kernel)
-		mean = cv2.mean(hsv[:,:,2])[0]
-		if(mean > 120):
-			cv2.drawContours(img, contours, index, color_white, fill, lineType, hierarchy, maxLevel)
+	contourMask = np.zeros(img.shape,np.uint8)
+	cv2.drawContours(contourMask,contours,index,255,-1)
+	pixelpoints = np.transpose(np.nonzero(contourMask))
+	region = origImage[contourMask==255]
+	average = np.average(region)
+	if(average > 200):
+		cv2.drawContours(img, contours, index, color_white, fill, lineType, hierarchy, maxLevel)
 
 def get_mask(img, damageType = "white"):
 	mask = np.zeros(img.shape[:2], np.uint8)
