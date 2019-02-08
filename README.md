@@ -8,3 +8,6 @@ Mais detalhes sobre o projeto estão disponíveis no [banner](https://github.com
 
 # Orientador
 * Prof. Dr. Edson Satoshi Gomi 
+
+# Fonte
+* Generative Image Inpainting with Contextual Attention: https://github.com/JiahuiYu/generative_inpainting
